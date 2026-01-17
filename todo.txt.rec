@@ -10,10 +10,8 @@ function DuplicateRecTask() {
   // TZOffset and Archive need to be set:
   // Set your local time zone offset:  5 for EST, 8 for PST
   var TZOffset = 5;
-  var backups = 10; //number of backups
   var fileName = "ToDoJames.txt"; // This file must already exist and be the only file of this name in Google Drive.
   var archName = "ArchiveToDoJames.txt"; // This file must already exist and be the only file of this name in Google Drive.
-  var folderName = "ToDoTxt";
   var Today = new Date();
   Today.setDate(Today.getDate()+1);
   Today = Today.toISOString();
@@ -33,16 +31,27 @@ function DuplicateRecTask() {
     var task = tasks[i];
       
     // Only check completed tasks with "r:" in the title.
-    if (task.search("r:")>0 && task.substr(0,2)=="x ") {
-      if (task.substr(2,10).match(/\d\d\d\d-\d\d-\d\d/)) {
-        task = task.replace(task.substr(2,11),"");
+    if (task.search("r:")>0 && task.substring(0,2)=="x ") {
+      if (task.substring(2,12).match(/\d\d\d\d-\d\d-\d\d/)) {
+        task = task.replace(task.substring(2,13),"");
       }
-      var TaskDueStr = task.substr(task.search("due:")+4,10);
+      NoDueDate = false
+      if (task.search("due:")==-1) {
+        var NoDueDate = true
+      }
+      var TaskDueStr = task.substring(task.search("due:")+4,task.search("due:")+14);
+      var TempToday = new Date();
+      var TempDueStr = TempToday.getFullYear() + "-" + ("0" + (TempToday.getMonth()+1)).slice(-2) + "-" + ("0" + (TempToday.getDate())).slice(-2);
       var RecStr = task.replace(/.*r:(\S*).*/, "$1");
         var RecInt;
       
         // Set interval for next recurrence.
-        var NewDueDate = new Date(TaskDueStr);
+        if (NoDueDate) {
+          var NewDueDate = new Date(TempDueStr)
+        }
+        else {
+          var NewDueDate = new Date(TaskDueStr);
+        }
         NewDueDate.setHours(NewDueDate.getHours()+TZOffset);
         if (!isNaN(parseFloat(RecStr.substring(0,1))) && isFinite(RecStr.substring(0,1))) {
           RecInt = Number(RecStr.substring (0,2));
@@ -68,7 +77,7 @@ function DuplicateRecTask() {
               var AddWeek = (NewDueDate.getDay() < RecInt - 1 ) ? 0:1;
               NewDueDate.setDate(NewDueDate.getDate() + (7 * AddWeek) - NewDueDate.getDay() + RecInt -1);
               break;
-          case "m":
+            case "m":
               var AddMonth = (NewDueDate.getDate() < RecInt - 1) ? 0:1;
               NewDueDate.setMonth(NewDueDate.getMonth()+AddMonth,RecInt);
               break;
@@ -82,10 +91,33 @@ function DuplicateRecTask() {
               break;
           }
         }
-      task = task.replace("due:"+TaskDueStr,"due:"+NewDueDate.toISOString().substr(0,10));
+      Logger.log("Editing: " + task)
+      if (NoDueDate) {
+        task = task + " due:" + NewDueDate.toISOString().substring(0,10);
+      }
+      else {
+        task = task.replace("due:"+TaskDueStr,"due:"+NewDueDate.toISOString().substring(0,10));
+      }
       task = task.replace("x ","");
+
+      // Add or change last completed date
+      noLastDate = false
+      if (task.search("last:")==-1) {
+        var noLastDate = true
+      }
+      
+      if (noLastDate) {
+        task = task + " last:" + TaskDueStr;
+      }
+      else {
+        var LastStr = task.substring(task.search("last:")+5,task.search("last:")+15);
+        task = task.replace("last:"+LastStr,"last:"+TaskDueStr);
+      }
+
+      Logger.log ("TASK RECURRED: " + task)
+
     }
-    if (task.substr(0,2)!="x ") {
+    if (task.substring(0,2)!="x ") {
       newtext = newtext + task + "\n";
     }
     else {
@@ -93,26 +125,6 @@ function DuplicateRecTask() {
     }
   }
             
-            // Adjust for DST.
-//            if (dueDate.getTimezoneOffset() < new Date(oldtask.due).getTimezoneOffset()) {
-//              dueDate.setDate(dueDate.getDate()+1);
-//            }
-
-            // Add new task.
-//            var newTask = Tasks.Tasks.insert(newtask, TASK_LIST_ID);
-  
-            // Make old task non-recurring.  Replace "r:" with an "rd:" to indicate it recurred but is excluded for future recurrences.
-//            oldtask.title = oldtask.title.replace("r:", "rd:");
-//            var updatedTask = Tasks.Tasks.update(oldtask, TASK_LIST_ID, TASK_ID);
-//          }
-          // If Archive set to 1, archive all completed tasks to spreadsheet (recurring or not)
-//          if (Archive == 1) {
-//            sheet.appendRow([oldtask.title,oldtask.due,oldtask.completed,oldtask.notes,taskList.title]);
-//            oldtask.deleted = "True";
-//          }
-//          var updatedTask = Tasks.Tasks.update(oldtask, TASK_LIST_ID, TASK_ID);
-
-  // Update ToDo.txt file.  Nothing is saved until all of the tasks are processed correctly.
   file.setContent(newtext);
   
   // Archive Tasks
