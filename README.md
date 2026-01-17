@@ -32,5 +32,5 @@ A Google script to create recurring tasks without relying upon a Chrome extensio
 	- Every three months:  r:03m
 	- Every Tuesday:  r:w03
 	- 28th of each month:  r:m28
-	- Every two years:  r:01y
+	- Every two years:  r:02y
 	- Every year on a August 10th:  r:y0810
